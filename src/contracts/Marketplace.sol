@@ -34,8 +34,10 @@ contract Marketplace {
 	}
 	
 	function withdraw() public {
-		require(payouts[msg.sender] > 0);
-		address(msg.sender).transfer(payouts[msg.sender]);
+		uint amount = payouts[msg.sender];
+		require(amount > 0);
+		payouts[msg.sender] = 0;
+		address(msg.sender).transfer(amount);
 	}
 	
 

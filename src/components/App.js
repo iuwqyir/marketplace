@@ -57,7 +57,7 @@ class App extends Component {
   async setUserBalance() {
     const web3 = window.web3;
     const balanceInWei = await this.state.marketplace.methods.getMyBalance().call({ from: this.state.account });
-    const balance = window.web3.utils.fromWei(balanceInWei.toString(), 'Ether');
+    const balance = parseFloat(window.web3.utils.fromWei(balanceInWei.toString(), 'Ether'));
     this.setState({ balance });
   }
 
