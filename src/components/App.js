@@ -33,6 +33,7 @@ class App extends Component {
     if (networkData) {
       const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
       this.setState({ marketplace });
+      this.setUserBalance();
       const productCount = await marketplace.methods.productCount().call();
       this.setState({ productCount });
       for (var i = 1; i <= productCount; i++) {
@@ -53,9 +54,17 @@ class App extends Component {
     this.setState({ account: accounts[0] });
   }
 
+  async setUserBalance() {
+    const web3 = window.web3;
+    const balanceInWei = await this.state.marketplace.methods.getMyBalance().call({ from: this.state.account });
+    const balance = window.web3.utils.fromWei(balanceInWei.toString(), 'Ether');
+    this.setState({ balance });
+  }
+
   createAccountChangeListener() {
     window.ethereum.on('accountsChanged', (accounts) => {
       this.setUserAccount();
+      this.setUserBalance();
     });
   }
 
@@ -65,11 +74,21 @@ class App extends Component {
       account: '',
       productCount: 0,
       products: [],
-      loading: true
+      loading: true,
+      balance: 0
     };
 
+    this.withdraw = this.withdraw.bind(this);
     this.createProduct = this.createProduct.bind(this);
     this.purchaseProduct = this.purchaseProduct.bind(this);
+  }
+
+  withdraw() {
+    this.setState({ loading: true });
+    this.state.marketplace.methods.withdraw().send({ from: this.state.account })
+      .once('receipt', (receipt) => {
+        this.setState({ loading: false });
+      });
   }
 
   createProduct(name, price) {
@@ -91,7 +110,7 @@ class App extends Component {
   render() {
     return (
       <div>
-        <Navbar account={this.state.account}/>
+        <Navbar account={this.state.account} balance={this.state.balance} withdraw={this.withdraw}/>
         <div className="container-fluid mt-5">
           <div className="row">
             <main role="main" className="col-lg-12 d-flex">

@@ -4,7 +4,7 @@ class Main extends Component {
   render() {
     return (
       <div id="content">
-        <h1>Add Product</h1>
+        <h2>Add Product</h2>
         <form onSubmit={(event) => {
           event.preventDefault();
           const name = this.productName.value;
