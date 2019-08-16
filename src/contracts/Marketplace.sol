@@ -63,7 +63,7 @@ contract Marketplace {
 		_product.owner = msg.sender;
 		_product.purchased = true;
 		products[_id] = _product;
-		payouts[_seller] = msg.value;
+		payouts[_seller] += msg.value;
 		emit ProductPurchased(_id, _product.name, _product.price, msg.sender, true);
 	}
 }
