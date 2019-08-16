@@ -80,7 +80,7 @@ contract('Marketplace', ([deployer, seller, buyer]) => {
 		});
 
 		it('payout works correctly', async () => {
-			let oldBalance, newBalance, payout;
+			let oldBalance, newBalance, payout, payoutLeft;
 			//get amount seller can withdraw
 			payout = await marketplace.getMyBalance({ from: seller });
 			payout = new web3.utils.BN(payout);
@@ -105,6 +105,12 @@ contract('Marketplace', ([deployer, seller, buyer]) => {
 			const expected = oldBalance.add(payout).sub(txCost);
 
 			assert.equal(newBalance.toString(), expected.toString());
+
+			//check that balance in smart contract is 0
+			payoutLeft = await marketplace.getMyBalance({ from: seller });
+			payoutLeft = new web3.utils.BN(payoutLeft);
+			assert.equal(payoutLeft, 0);
+
 		});
 
 		it('buying non-existing product fails', async () => {
