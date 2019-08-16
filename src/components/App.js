@@ -34,18 +34,22 @@ class App extends Component {
       const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
       this.setState({ marketplace });
       this.setUserBalance();
-      const productCount = await marketplace.methods.productCount().call();
-      this.setState({ productCount });
-      for (var i = 1; i <= productCount; i++) {
-        const product = await marketplace.methods.products(i).call();
-        this.setState({
-          products: [...this.state.products, product]
-        });
-      }
+      this.loadProducts()
       this.setState({ loading: false });
     } else {
       window.alert('Marketplace contract not deployed to detected network.');
     }
+  }
+
+  async loadProducts() {
+    let productCount = await this.state.marketplace.methods.productCount().call();
+    this.setState({ productCount });
+    let products = [];
+    for (var i = 1; i <= productCount; i++) {
+      const product = await this.state.marketplace.methods.products(i).call();
+      products.push(product);
+    }
+    this.setState({ products });
   }
 
   async setUserAccount() {
@@ -85,26 +89,35 @@ class App extends Component {
 
   withdraw() {
     this.setState({ loading: true });
-    this.state.marketplace.methods.withdraw().send({ from: this.state.account })
-      .once('receipt', (receipt) => {
-        this.setState({ loading: false });
-      });
+    this.state.marketplace.methods.withdraw()
+      .send(
+        { from: this.state.account }, 
+        () => {this.setState({ loading: false })}
+      );
   }
 
   createProduct(name, price) {
     this.setState({ loading: true });
-    this.state.marketplace.methods.createProduct(name, price).send({ from: this.state.account })
-      .once('receipt', (receipt) => {
-        this.setState({ loading: false });
-      });
+    this.state.marketplace.methods.createProduct(name, price)
+      .send(
+        { from: this.state.account }, 
+        () => {
+          this.loadProducts();
+          this.setState({ loading: false })
+        }
+      );
   }
 
   purchaseProduct(id, price) {
     this.setState({ loading: true });
-    this.state.marketplace.methods.purchaseProduct(id).send({ from: this.state.account, value: price })
-      .once('receipt', (receipt) => {
-        this.setState({ loading: false });
-      });
+    this.state.marketplace.methods.purchaseProduct(id)
+      .send(
+        { from: this.state.account, value: price }, 
+        () => {
+          this.loadProducts();
+          this.setState({ loading: false })
+        }
+      );
   }
 
   render() {
