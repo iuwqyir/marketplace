@@ -7,41 +7,44 @@ import Main from './Main';
 import Loader from './Loader';
 
 class App extends Component {
-
-  async componentWillMount() {
-    await this.loadWeb3();
-    await this.loadBlockchainData();
+  
+  componentDidMount() {
+    this.loadBlockchainData();
     this.createAccountChangeListener();
   }
 
   async loadWeb3() {
     if (window.ethereum) {
-      window.web3 = new Web3(window.ethereum);
+      this.state.web3 = new Web3(window.ethereum);
       await window.ethereum.enable();
     } else if (window.web3) {
-      window.web3 = new Web3(window.web3.currentProvider);
+      this.state.web3 = new Web3(window.web3.currentProvider);
     } else {
       window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
     }
   }
 
   async loadBlockchainData() {
-    const web3 = window.web3;
-    this.setUserAccount();
+    if (!this.state.web3) {
+      await this.loadWeb3();
+    }
+    const web3 = this.state.web3;
     const networkId = await web3.eth.net.getId();
     const networkData = Marketplace.networks[networkId];
     if (networkData) {
-      const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
-      this.setState({ marketplace });
-      this.setUserBalance();
+      if(!this.state.marketplace) {
+        const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
+        this.setState({ marketplace });
+      }
+      this.setUserData();
       this.loadProducts()
-      this.setState({ loading: false });
     } else {
       window.alert('Marketplace contract not deployed to detected network.');
     }
   }
 
   async loadProducts() {
+    this.setState({ loading: false });
     let productCount = await this.state.marketplace.methods.productCount().call();
     this.setState({ productCount });
     let products = [];
@@ -49,32 +52,31 @@ class App extends Component {
       const product = await this.state.marketplace.methods.products(i).call();
       products.push(product);
     }
-    this.setState({ products });
+    this.setState({ products, loading: false });
   }
 
-  async setUserAccount() {
-    const web3 = window.web3;
+  async setUserData() {
+    const web3 = this.state.web3;
     const accounts = await web3.eth.getAccounts();
-    this.setState({ account: accounts[0] });
+    const balanceInWei = await this.state.marketplace.methods.getMyBalance().call({ from: accounts[0] });
+    const balance = parseFloat(web3.utils.fromWei(balanceInWei.toString(), 'Ether'));
+    this.setState({ account: accounts[0], balance });
   }
 
   async setUserBalance() {
-    const web3 = window.web3;
-    const balanceInWei = await this.state.marketplace.methods.getMyBalance().call({ from: this.state.account });
-    const balance = parseFloat(window.web3.utils.fromWei(balanceInWei.toString(), 'Ether'));
-    this.setState({ balance });
+    const web3 = this.state.web3;
   }
 
   createAccountChangeListener() {
     window.ethereum.on('accountsChanged', (accounts) => {
-      this.setUserAccount();
-      this.setUserBalance();
+      this.setUserData();
     });
   }
 
   constructor(props) {
     super(props);
     this.state = {
+      web3: null,
       account: '',
       productCount: 0,
       products: [],
@@ -90,34 +92,29 @@ class App extends Component {
   withdraw() {
     this.setState({ loading: true });
     this.state.marketplace.methods.withdraw()
-      .send(
-        { from: this.state.account }, 
-        () => {this.setState({ loading: false })}
-      );
+      .send({ from: this.state.account })
+      .once('receipt', (receipt) => {
+        this.setUserData();
+        this.setState({ loading: false });
+      });
   }
 
   createProduct(name, price) {
     this.setState({ loading: true });
     this.state.marketplace.methods.createProduct(name, price)
-      .send(
-        { from: this.state.account }, 
-        () => {
+      .send({ from: this.state.account })
+      .once('receipt', (receipt) => {
           this.loadProducts();
-          this.setState({ loading: false })
-        }
-      );
+      });
   }
 
   purchaseProduct(id, price) {
     this.setState({ loading: true });
     this.state.marketplace.methods.purchaseProduct(id)
-      .send(
-        { from: this.state.account, value: price }, 
-        () => {
+      .send({ from: this.state.account, value: price })
+      .once('receipt', (receipt) => {
           this.loadProducts();
-          this.setState({ loading: false })
-        }
-      );
+      });
   }
 
   render() {
@@ -132,7 +129,8 @@ class App extends Component {
                 : <Main 
                   products={this.state.products} 
                   createProduct={this.createProduct}
-                  purchaseProduct={this.purchaseProduct} /> 
+                  purchaseProduct={this.purchaseProduct}
+                  web3={this.state.web3} /> 
               }
             </main>
           </div>

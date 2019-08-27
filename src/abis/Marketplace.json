@@ -6274,12 +6274,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x3E2a49A79CF1b358eC4FEfb70480f40AfA752579",
-      "transactionHash": "0x56bb9b72198430603ec3b1f22a6fbf7677fe180f26c3d24b40676462a01267d1"
+      "address": "0xBb19B12eB92A847A6078e5a83058C23f2C90f5e8",
+      "transactionHash": "0x1b81c3e12e0b5d0c5fa977eb08d91be658eec29b5e6eb2705d5f732bdea723e9"
     }
   },
   "schemaVersion": "3.0.1",
-  "updatedAt": "2019-08-16T15:43:13.440Z",
+  "updatedAt": "2019-08-27T11:21:07.359Z",
   "devdoc": {
     "methods": {}
   },
