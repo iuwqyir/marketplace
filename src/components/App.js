@@ -32,10 +32,8 @@ class App extends Component {
     const networkId = await web3.eth.net.getId();
     const networkData = Marketplace.networks[networkId];
     if (networkData) {
-      if(!this.state.marketplace) {
-        const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
-        this.setState({ marketplace });
-      }
+      const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address);
+      this.setState({ marketplace });
       this.setUserData();
       this.loadProducts()
     } else {
